@@ -1,6 +1,6 @@
-//App.js
+// App.js
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -9,11 +9,26 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import TransactionsListScreen from './screens/TransactionsListScreen';
 import TransactionDetailScreen from './screens/TransactionDetailScreen.js';
 import SummaryScreen from './screens/SummaryScreen';
+import { initializeApp } from '@firebase/app';
+import { getFirestore, collection, getDocs } from '@firebase/firestore';
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAPI4-f6fvZvqtkW0InpxnvmOnlo-dea0M",
+  authDomain: "info6127-1133576.firebaseapp.com",
+  databaseURL: "https://info6127-1133576-default-rtdb.firebaseio.com",
+  projectId: "info6127-1133576",
+  storageBucket: "info6127-1133576.appspot.com",
+  messagingSenderId: "165619413472",
+  appId: "1:165619413472:web:d3ac2277d604601a343b85",
+  measurementId: "G-ZWKVSHWVZ5"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const TransactionsStack = ({ navigation, transactions }) => (
+const TransactionsStack = ({ navigation, transactions, setTransactions }) => (
   <Stack.Navigator>
     <Stack.Screen 
       name="Transactions List" 
@@ -23,7 +38,7 @@ const TransactionsStack = ({ navigation, transactions }) => (
         headerTitleStyle: { fontWeight: 'bold', fontSize: 24 },
       }}
     >
-      {() => <TransactionsListScreen navigation={navigation} transactions={transactions} />}
+      {(props) => <TransactionsListScreen {...props} navigation={navigation} transactions={transactions} setTransactions={setTransactions} />}
     </Stack.Screen>
     <Stack.Screen 
       name="Transaction Detail" 
@@ -38,18 +53,24 @@ const TransactionsStack = ({ navigation, transactions }) => (
 );
 
 
+
 const App = () => {
-  const transactions = [
-    { id: 1, name: 'Grocery shopping', amount: 17, place: 'Local Supermarket, Main Street', date: '2024-03-26' },
-    { id: 2, name: 'Dinner', amount: 208, place: 'Italian Restaurant, Elm Avenue', date: '2024-03-25' },
-    { id: 3, name: 'Movie tickets', amount: 151, place: 'Cinema, Downtown', date: '2024-03-24' },
-    { id: 4, name: 'Gasoline refill', amount: 100, place: 'Gas Station, Oak Street', date: '2024-03-26' },
-    { id: 5, name: 'Online shopping', amount: 231, place: 'Online Store', date: '2024-03-25' },
-    { id: 6, name: 'Coffee with friends', amount: 154, place: 'Café, Park Avenue', date: '2024-03-24' },
-    { id: 7, name: 'Home utility bills', amount: 100, place: 'Service Provider, Pine Street', date: '2024-03-26' },
-    { id: 8, name: 'Gym membership', amount: 267, place: 'Fitness Center, Maple Avenue', date: '2024-03-25' },
-    { id: 9, name: 'Clothing purchase', amount: 150, place: 'Clothing Store, Riverside Drive', date: '2024-03-24' }
-  ];
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const transactionsCollection = collection(db, 'transactions');
+        const querySnapshot = await getDocs(transactionsCollection);
+        const fetchedTransactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
 
   return (
     <NavigationContainer>
@@ -79,10 +100,12 @@ const App = () => {
         })}
       >
         <Tab.Screen name="Transactions">
-          {({ navigation }) => <TransactionsStack navigation={navigation} transactions={transactions} />}
+          {({ navigation }) => <TransactionsStack navigation={navigation} transactions={transactions} setTransactions={setTransactions} />}
         </Tab.Screen>
 
-        <Tab.Screen name="Summary" initialParams={{ transactions }} component={SummaryScreen} />
+        <Tab.Screen name="Summary" options={{ tabBarLabel: 'Summary' }}>
+          {({ navigation }) => (<SummaryScreen navigation={navigation} transactions={transactions} setTransactions={setTransactions} />)}
+        </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
   );

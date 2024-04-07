@@ -1,8 +1,11 @@
+//Summary Screen
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const SummaryScreen = ({ route }) => {
-  const { transactions } = route.params;
+const SummaryScreen = ({ navigation, transactions }) => {
+
+  console.log("Transaction in SUmmary: ", transactions)
 
   // Calculate total transactions
   const totalTransactions = transactions.length;
